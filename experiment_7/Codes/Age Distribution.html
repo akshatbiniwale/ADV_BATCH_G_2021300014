@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Age Distribution</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: left;
+    }
+
+    .bar {
+      fill: steelblue;
+      transition: fill 0.3s ease;
+    }
+
+    .bar:hover {
+      fill: darkblue;
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 8px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Age Distribution</h2>
+  <div id="histogram"></div>
+
+  <script>
+    // Create tooltip
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip");
+
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const width = 500 - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+
+    const svg = d3.select("#histogram").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Load and process the data
+    d3.csv("../dataset.csv").then(data => {
+      const ages = data.map(d => +d.age);
+
+      const x = d3.scaleLinear().domain([20, 40]).range([0, width]);
+      const bins = d3.histogram().domain(x.domain()).thresholds(x.ticks(10))(ages);
+
+      const y = d3.scaleLinear().domain([0, d3.max(bins, d => d.length)]).range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0, ${height})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+
+      svg.selectAll("rect")
+        .data(bins)
+        .enter().append("rect")
+        .attr("x", d => x(d.x0))
+        .attr("y", d => y(d.length))
+        .attr("width", d => x(d.x1) - x(d.x0) - 1)
+        .attr("height", d => height - y(d.length))
+        .attr("class", "bar")
+        .on("mouseover", (event, d) => {
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          tooltip.html(`Range: ${d.x0} - ${d.x1}<br/>Count: ${d.length}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 5)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "#555")
+        .text("Age");
+
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -40)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "#555")
+        .text("Count");
+    }).catch(error => {
+      console.error("Error loading the CSV file:", error);
+    });
+  </script>
+</body>
+
+</html>

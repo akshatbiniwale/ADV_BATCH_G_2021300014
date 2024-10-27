@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Age vs Mutual Funds</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: left;
+    }
+
+    .dot {
+      fill: steelblue;
+      stroke: white;
+      stroke-width: 1.5px;
+      transition: fill 0.3s ease;
+    }
+
+    .dot:hover {
+      fill: darkblue;
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 8px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Scatter Plot: Age vs Mutual Funds</h2>
+  <div id="scatter-plot"></div>
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    // Create tooltip
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip");
+
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const width = 500 - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+
+    const svg = d3.select("#scatter-plot").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Load and process the data
+    d3.csv("../dataset.csv").then(data => {
+      const x = d3.scaleLinear().domain([20, 45]).range([0, width]);
+      const y = d3.scaleLinear().domain([0, 7]).range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0, ${height})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+
+      svg.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("cx", d => x(d.age))
+        .attr("cy", d => y(d.Mutual_Funds))
+        .attr("r", 6)
+        .attr("class", "dot")
+        .on("mouseover", (event, d) => {
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          tooltip.html(`Age: ${d.age}<br/>Mutual Funds: ${d.Mutual_Funds}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 5)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "#555")
+        .text("Age");
+
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -40)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "#555")
+        .text("Mutual Funds");
+    }).catch(error => {
+      console.error("Error loading the CSV file:", error);
+    });
+  </script>
+</body>
+
+</html>

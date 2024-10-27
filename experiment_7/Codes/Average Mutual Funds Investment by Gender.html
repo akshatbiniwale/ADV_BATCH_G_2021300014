@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Average Mutual Funds Investment by Gender</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: left;
+    }
+
+    .bar {
+      fill: steelblue;
+      transition: fill 0.3s ease;
+    }
+
+    .bar:hover {
+      fill: darkblue;
+    }
+
+    .axis-label {
+      font-size: 14px;
+      fill: #555;
+      font-weight: bold;
+    }
+
+    .label {
+      fill: white;
+      font-size: 14px;
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 8px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Average Mutual Funds Investment by Gender</h2>
+  <div id="chart"></div>
+
+  <script>
+    // Create tooltip
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip");
+
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const width = 500 - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+
+    const svg = d3.select("#chart").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Load and process the data
+    d3.csv("../dataset.csv").then(data => {
+      const averageByGender = d3.rollups(
+        data,
+        v => d3.mean(v, d => +d.Mutual_Funds).toFixed(2),
+        d => d.gender
+      ).map(([gender, Mutual_Funds]) => ({ gender, Mutual_Funds: +Mutual_Funds }));
+
+      const xScale = d3.scaleBand()
+        .domain(averageByGender.map(d => d.gender))
+        .range([0, width])
+        .padding(0.3);
+
+      const yScale = d3.scaleLinear()
+        .domain([0, d3.max(averageByGender, d => d.Mutual_Funds)]).nice()
+        .range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0, ${height})`)
+        .call(d3.axisBottom(xScale))
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", 35)
+        .attr("text-anchor", "middle")
+        .attr("class", "axis-label")
+        .text("Gender");
+
+      svg.append("g")
+        .call(d3.axisLeft(yScale))
+        .append("text")
+        .attr("x", -height / 2)
+        .attr("y", -40)
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("class", "axis-label")
+        .text("Average Mutual Funds Investment");
+
+      svg.selectAll(".bar")
+        .data(averageByGender)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", d => xScale(d.gender))
+        .attr("y", d => yScale(d.Mutual_Funds))
+        .attr("width", xScale.bandwidth())
+        .attr("height", d => height - yScale(d.Mutual_Funds))
+        .on("mouseover", function (event, d) {
+          d3.select(this).style("fill", "darkblue");
+
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+
+          tooltip.html(`Gender: ${d.gender}<br/>Average Mutual Funds: ${d.Mutual_Funds}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function () {
+          d3.select(this).style("fill", "steelblue");
+
+          tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+
+      svg.selectAll(".label")
+        .data(averageByGender)
+        .enter().append("text")
+        .attr("class", "label")
+        .attr("x", d => xScale(d.gender) + xScale.bandwidth() / 2)
+        .attr("y", d => yScale(d.Mutual_Funds) + 15)
+        .attr("text-anchor", "middle")
+        .text(d => d.Mutual_Funds);
+
+    }).catch(error => {
+      console.error("Error loading the CSV file:", error);
+    });
+  </script>
+</body>
+
+</html>
