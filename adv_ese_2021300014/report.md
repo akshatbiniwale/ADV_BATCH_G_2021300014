@@ -11,7 +11,7 @@ Data is initially preprocessed using excel.
 2. Open terminal/command prompt in that folder and install required packages:
 
 ```shell
-install streamlit pandas seaborn matplotlib plotly wordcloud
+pip install streamlit pandas seaborn matplotlib plotly wordcloud
 ```
 
 3. Run the Streamlit app:
