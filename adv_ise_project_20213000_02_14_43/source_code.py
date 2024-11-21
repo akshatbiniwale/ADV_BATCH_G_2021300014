@@ -117,7 +117,21 @@ st.write("Upload a CSV file to automatically generate important visualizations, 
 uploaded_file = st.file_uploader("📂 Upload a CSV file", type="csv")
 if uploaded_file:
     try:
-        data = pd.read_csv(uploaded_file)
+        # Detect delimiter and handle missing headers
+        try:
+            # Attempt to read with default delimiter
+            data = pd.read_csv(uploaded_file)
+        except pd.errors.ParserError:
+            # Fallback to semicolon-separated data
+            uploaded_file.seek(0)  # Reset file pointer
+            data = pd.read_csv(uploaded_file, delimiter=';')
+
+        # Check if column names are missing
+        if data.columns.str.match(r"Unnamed:").all():
+            data = pd.read_csv(uploaded_file, header=None)  # Reload without headers
+            data.columns = [f"Column_{i+1}" for i in range(data.shape[1])]  # Assign default column names
+
+        # Clean data (handle missing values)
         data = clean_data(data)
         st.success("✅ Dataset Loaded and Cleaned Successfully!")
 
